@@ -14,16 +14,16 @@ class KafkaHotelWeatherJoiner {
 
 
     val joinData = hotelStructDf.join(expediaDf, $"hotel.id" === $"hotel_id","inner")
-     // .where("idle_days >= 2 and idle_days < 30")
-    //
-   // hotelStructDf.where($"hotel.country" === "US").show()
+
+      joinData.where("idle_days >= 2 and idle_days < 30")
+        .show()
+
+    println("checkin`s count by country")
     joinData.groupBy("hotel.country").agg(sum("checkin_count") as "checkin_count").show()
-//
-//
-//    joinData.foreach(
-//      row => println(row)
-//    )
-//    joinData.show()
+    println("checkin`s count by cities")
+    joinData.groupBy("hotel.city").agg(sum("checkin_count") as "checkin_count").show()
+
+
   }
 
   private def readHotelFromKafka(spark: SparkSession): DataFrame = {
@@ -35,7 +35,6 @@ class KafkaHotelWeatherJoiner {
       .option("subscribe", "hotel_kafka")
      // .option("startingOffsets", " {\"hotel_kafka\":{\"0\":10}}")
    //   .option("endingOffsets", " {\"hotel_kafka\":{\"0\":20}}")
-      //.option("maxOffsetsPerTrigger", "5")
       .load()
 
     val hotelJsonDf = hotelDf.selectExpr("CAST(value AS STRING)")

@@ -3,9 +3,14 @@ use spark;
 
 CREATE EXTERNAL TABLE hotel (Id BIGINT,Name VARCHAR(64),Country VARCHAR(64),City VARCHAR(64),Address VARCHAR(64),
                              Latitude DOUBLE,Longitude DOUBLE)
-    ROW FORMAT DELIMITED
-        FIELDS TERMINATED BY ','
+    ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+        WITH SERDEPROPERTIES (
+        "separatorChar" = ",",
+        "quoteChar"     = "\"",
+        "escapeChar"    = "\\"
+        )
     location 'hdfs://localhost:9000/user/spark/hotels_unzip';
+
 
 
 CREATE EXTERNAL TABLE expedia(notused INT)

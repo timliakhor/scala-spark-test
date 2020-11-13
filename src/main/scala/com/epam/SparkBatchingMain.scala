@@ -7,11 +7,11 @@ object SparkBatchingMain {
 
     val spark = createSparkSession
 
-    new KafkaHotelWeatherJoiner().joinHotelAndWeather(spark)
+    new BatchingHotelJoinExpediaTask().joinHotelAndWeather(spark)
   }
 
   def createSparkSession: SparkSession = {
     SparkSession.builder().appName("example-spark-scala-read")
-      .config("spark.master", "local").getOrCreate()
+      .config("spark.master", "local[*]").getOrCreate()
   }
 }

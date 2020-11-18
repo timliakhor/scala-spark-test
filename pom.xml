@@ -15,8 +15,6 @@
         <spark.version>3.0.1</spark.version>
     </properties>
 
-
-
     <dependencies>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -48,40 +46,28 @@
             <version>${spark.version}</version>
         </dependency>
 
-        <!--    <dependency>-->
-        <!--      <groupId>ch.qos.logback</groupId>-->
-        <!--      <artifactId>logback-classic</artifactId>-->
-        <!--      <version>1.1.2</version>-->
-        <!--    </dependency>-->
-        <!-- https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams-scala_2.12</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.softwaremill.sttp.client3</groupId>
-            <artifactId>core_2.12</artifactId>
-            <version>3.0.0-RC7</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.hsr</groupId>
-            <artifactId>geohash</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-
     </dependencies>
 
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <delimiters>
+                        <delimiter>@</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

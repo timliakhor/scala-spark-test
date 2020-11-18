@@ -1,9 +1,10 @@
-package com.epam
+package com.epam.batching
 
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SaveMode, SparkSession}
+import com.epam.util.{PropertyReader, Settings}
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{col, count, datediff, from_json, from_unixtime, lag, month, sum, to_date, unix_timestamp, when, year}
-import org.apache.spark.sql.types.{DataTypes, IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.slf4j.{Logger, LoggerFactory}
 
 class BatchingHotelJoinExpediaTask {
@@ -12,10 +13,10 @@ class BatchingHotelJoinExpediaTask {
 
   def joinHotelAndWeather(spark: SparkSession): Unit = {
     import spark.implicits._
-    val hotelStructDf = readHotelFromKafka(spark)
-    val expediaDf = readAvroExpedia(spark).persist()
+    val hotelStructDf: DataFrame = readHotelFromKafka(spark)
+    val expediaDf: DataFrame = readAvroExpedia(spark).persist()
 
-    val aggregateExpediaIdleDaysDf = calculateIdleDays(spark, expediaDf).persist()
+    val aggregateExpediaIdleDaysDf: DataFrame = calculateIdleDays(spark, expediaDf).persist()
 
     val joinData = hotelStructDf.join(aggregateExpediaIdleDaysDf, $"hotel.id" === $"clean_hotel_id", "inner")
       .persist()
@@ -25,6 +26,14 @@ class BatchingHotelJoinExpediaTask {
     groupByCountry(joinData)
 
     writeExpediaInAvro(spark, expediaDf.join(aggregateExpediaIdleDaysDf, $"hotel_id" === $"clean_hotel_id", "inner"))
+  }
+
+  private def readAvroWeatherHotelJoinResultStream(spark: SparkSession): Unit = {
+    spark.read
+      .format("avro")
+      .load(PropertyReader.getProperty(Settings.resultStateUrl))
+      .show()
+
   }
 
   private def groupByCountry(joinData: DataFrame) = {
@@ -43,10 +52,9 @@ class BatchingHotelJoinExpediaTask {
     val hotelDf = spark
       .read
       .format("kafka")
-      .option("kafka.bootstrap.servers", PropertyReader.getProperty("kafka_url"))
-      .option("subscribe", PropertyReader.getProperty("kafka_hotel_topic"))
-      .option("startingOffsets", PropertyReader.getProperty("start_kafka_offset"))
-      .option("endingOffsets", PropertyReader.getProperty("end_kafka_offset"))
+      .option("kafka.bootstrap.servers", PropertyReader.getProperty(Settings.kafkaUrl))
+      .option("subscribe", PropertyReader.getProperty(Settings.hotelTopic))
+      .option("startingOffsets", PropertyReader.getProperty(Settings.kafkaStartOffset))
       .load()
 
     val hotelJsonDf = hotelDf.selectExpr("CAST(value AS STRING)")
@@ -87,7 +95,7 @@ class BatchingHotelJoinExpediaTask {
   private def readAvroExpedia(spark: SparkSession): DataFrame = {
     spark.read
       .format("avro")
-      .load(PropertyReader.getProperty("expedia_url"))
+      .load(PropertyReader.getProperty(Settings.expediaHdfsUrl))
   }
 
   private def writeExpediaInAvro(spark: SparkSession, expediaDf: DataFrame) = {
@@ -97,7 +105,7 @@ class BatchingHotelJoinExpediaTask {
       .withColumn("date_year", year(from_unixtime(unix_timestamp($"srch_ci", "yyyy-MM-dd"))))
       .write
       .partitionBy("date_year","date_month")
-      .mode(SaveMode.Overwrite).format("avro").save(PropertyReader.getProperty("clean_expedia_url"))
+      .mode(SaveMode.Overwrite).format("avro").save(PropertyReader.getProperty(Settings.cleanExpediaHdfsUrl))
   }
 
 }

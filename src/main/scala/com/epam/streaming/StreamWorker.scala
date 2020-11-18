@@ -73,8 +73,7 @@ class StreamWorker {
       .withColumn("most_popular_stay_cnt_new", greatest(numCols.head, numCols.tail: _*))
       .withColumn("most_popular_stay_type_new", mostPopularStayType)
       .coalesce(1)
-      .writeStream
-      .outputMode(OutputMode.Complete())
+      .writeStream.outputMode(OutputMode.Complete())
     .foreachBatch { (batchDF: DataFrame, batchId: Long) => {
       batchDF.write.format("avro").mode(SaveMode.Append).save(PropertyReader.getProperty(Settings.resultStateUrl))
     }
